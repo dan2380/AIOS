@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#1ea8ba" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Main Street Trades · Discord Structure Proposal</title>
+  <style>
+    /* Cosmetics Growth tokens — page chrome */
+    :root{
+      --bg:#0e1218;
+      --bg-soft:#141a24;
+      --bg-card:#1c232f;
+      --bg-card-hi:#222b39;
+      --teal:#1ea8ba;
+      --teal-dark:#177080;
+      --teal-pale:rgba(30,168,186,0.10);
+      --teal-border:rgba(30,168,186,0.22);
+      --cyan:#00E5FF;
+      --text-light:rgba(255,255,255,0.92);
+      --text-mid:rgba(255,255,255,0.66);
+      --text-faint:rgba(255,255,255,0.42);
+      --border:rgba(255,255,255,0.08);
+      --border-mid:rgba(255,255,255,0.14);
+
+      /* Discord-look tokens (deviation from CG palette, used only inside
+         the Discord mockup panels to feel native). */
+      --dc-bg:#2b2d31;
+      --dc-bg-darker:#1e1f22;
+      --dc-channel:#b5bac1;
+      --dc-channel-hover:#dbdee1;
+      --dc-channel-active:#fff;
+      --dc-category:#949ba4;
+      --dc-divider:#3f4147;
+      --dc-mention:#5865f2;
+      --dc-unread:#fff;
+      --dc-link:#00a8fc;
+
+      --font-display:'Bricolage Grotesque',system-ui,sans-serif;
+      --font-body:'Inter',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','SF Mono',monospace;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text-light);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+    a{color:var(--cyan);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* ---------- Page header ---------- */
+    .hero{
+      padding:64px 40px 32px;
+      max-width:1280px;
+      margin:0 auto;
+    }
+    .eyebrow{
+      font-family:var(--font-mono);
+      font-size:12px;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      color:var(--teal);
+    }
+    h1{
+      font-family:var(--font-display);
+      font-size:clamp(36px,3.5vw,52px);
+      line-height:1.05;
+      margin:8px 0 12px;
+      font-weight:600;
+      letter-spacing:-0.01em;
+    }
+    h1 span{color:var(--teal)}
+    .lede{
+      color:var(--text-mid);
+      max-width:64ch;
+      font-size:17px;
+    }
+
+    /* ---------- Section ---------- */
+    section{padding:24px 40px 64px;max-width:1280px;margin:0 auto}
+    h2{
+      font-family:var(--font-display);
+      font-size:28px;
+      font-weight:600;
+      margin:48px 0 8px;
+      letter-spacing:-0.005em;
+    }
+    h3{
+      font-family:var(--font-display);
+      font-size:18px;
+      font-weight:600;
+      margin:32px 0 6px;
+    }
+    .muted{color:var(--text-mid)}
+
+    /* ---------- Mockup pair (before / after) ---------- */
+    .pair{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:24px;
+      margin-top:24px;
+    }
+    @media (max-width:980px){.pair{grid-template-columns:1fr}}
+    .pair > div{display:flex;flex-direction:column;gap:10px}
+    .pair-label{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-family:var(--font-mono);
+      font-size:11px;
+      letter-spacing:0.14em;
+      text-transform:uppercase;
+      color:var(--text-faint);
+    }
+    .pair-label.now::before{content:"";width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block}
+    .pair-label.next::before{content:"";width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block}
+
+    /* ---------- Discord-style mockup ---------- */
+    .dc{
+      background:var(--dc-bg);
+      border-radius:14px;
+      overflow:hidden;
+      box-shadow:0 24px 48px -16px rgba(0,0,0,0.5);
+      border:1px solid var(--border);
+      font-family:'gg sans','Helvetica Neue',Inter,system-ui,sans-serif;
+    }
+    .dc-server{
+      padding:14px 16px;
+      background:var(--dc-bg-darker);
+      border-bottom:1px solid #000;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:600;
+      color:#fff;
+      font-size:15px;
+    }
+    .dc-server .mark{
+      width:24px;height:24px;border-radius:6px;
+      background:linear-gradient(135deg,var(--teal),var(--cyan));
+      display:grid;place-items:center;
+      font-family:var(--font-mono);
+      font-size:11px;font-weight:700;color:#0e1218;
+    }
+    .dc-list{padding:8px 8px 16px}
+    .dc-cat{
+      display:flex;align-items:center;gap:4px;
+      padding:16px 8px 4px;
+      color:var(--dc-category);
+      font-size:11px;font-weight:700;
+      letter-spacing:0.04em;
+      text-transform:uppercase;
+      cursor:default;
+    }
+    .dc-cat::before{
+      content:"";display:inline-block;
+      width:0;height:0;
+      border-left:4px solid var(--dc-category);
+      border-top:3px solid transparent;
+      border-bottom:3px solid transparent;
+      transform:rotate(90deg);
+      margin-right:4px;
+    }
+    .dc-ch{
+      display:flex;align-items:center;gap:6px;
+      padding:6px 8px;
+      margin:1px 0;
+      border-radius:4px;
+      color:var(--dc-channel);
+      font-size:14px;
+      cursor:default;
+      transition:background 80ms ease;
+    }
+    .dc-ch:hover{background:rgba(255,255,255,0.04);color:var(--dc-channel-hover)}
+    .dc-ch.active{background:rgba(255,255,255,0.07);color:var(--dc-channel-active);font-weight:500}
+    .dc-ch .hash{color:var(--dc-category);font-weight:400}
+    .dc-ch .emoji{margin-right:2px}
+    .dc-ch.divider{
+      color:#7c93a8;
+      font-family:'gg sans',Inter,system-ui;
+      font-weight:600;
+      letter-spacing:0.02em;
+      background:rgba(30,168,186,0.06);
+      border-left:2px solid var(--teal);
+      padding-left:10px;
+      margin:6px 0 2px;
+      pointer-events:none;
+    }
+    .dc-ch.voice .hash::before{content:"🔊"}
+    .dc-ch.voice .hash{font-size:12px}
+
+    /* ---------- Why grid ---------- */
+    .why{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+      margin-top:20px;
+    }
+    @media (max-width:900px){.why{grid-template-columns:1fr}}
+    .why .card{
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:20px;
+    }
+    .why .card .num{
+      font-family:var(--font-mono);
+      color:var(--teal);
+      font-size:12px;
+      letter-spacing:0.1em;
+    }
+    .why .card h4{
+      font-family:var(--font-display);
+      font-size:18px;
+      margin:6px 0 8px;
+      font-weight:600;
+    }
+    .why .card p{color:var(--text-mid);margin:0;font-size:14px}
+
+    /* ---------- Pattern explainer ---------- */
+    .pattern{
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:24px;
+      margin-top:24px;
+    }
+    .pattern code{
+      font-family:var(--font-mono);
+      background:rgba(255,255,255,0.04);
+      padding:2px 6px;
+      border-radius:4px;
+      font-size:13px;
+      color:var(--teal);
+    }
+    .pattern .row{display:flex;gap:12px;align-items:flex-start;margin:10px 0}
+    .pattern .row .num{
+      flex:0 0 28px;height:28px;border-radius:50%;
+      background:var(--teal-pale);color:var(--teal);
+      display:grid;place-items:center;
+      font-family:var(--font-mono);font-size:12px;font-weight:600;
+      border:1px solid var(--teal-border);
+    }
+
+    .footnote{
+      color:var(--text-faint);
+      font-size:13px;
+      max-width:64ch;
+      margin-top:32px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="eyebrow">Main Street Trades · proposal · 05-14-26</div>
+  <h1>Restructure the server so members can <span>scroll, browse, and pick their guy</span>.</h1>
+  <p class="lede">
+    Today the server mixes machine feeds (UOV scanner, insider buys) with human analysts
+    (Charlie). It also buries paid tools in one category and analysts in another. The fix:
+    two clear top-level sections. <strong>Paid Tools / Signals</strong> = the data we monitor.
+    <strong>Partner Analysts</strong> = the humans giving picks, each with their own visual
+    header. As you bring on more partners, you just drop another divider.
+  </p>
+</div>
+
+<section>
+  <h2>Before vs. after</h2>
+  <p class="muted">Same channels, just regrouped so a new member can scan the sidebar and immediately understand who's behind each thing.</p>
+
+  <div class="pair">
+    <!-- BEFORE -->
+    <div>
+      <div class="pair-label now">Now &nbsp;·&nbsp; mixed signals</div>
+      <div class="dc">
+        <div class="dc-server"><div class="mark">MST</div> Main Street Trades</div>
+        <div class="dc-list">
+          <div class="dc-cat">🏁・Getting Started</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">👋</span>welcome</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🧭</span>start-here</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">⚠️</span>disclaimer-must-read</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💳</span>manage-membership</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">📢</span>announcements</div>
+
+          <div class="dc-cat">📅・Calendar</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">📊</span>earnings-this-week</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🌐</span>macro-events</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🌅</span>premarket-brief</div>
+
+          <div class="dc-cat">⚡・Short Term</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🔍</span>unusual-options-volume</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💡</span>charlie-options-ideas</div>
+
+          <div class="dc-cat">📡・Signals</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🏛️</span>politician-trade-alerts</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🐋</span>insider-buy-alerts</div>
+
+          <div class="dc-cat">💬・Discussion</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💬</span>main-chat</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🔥</span>day-trading-chat</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎲</span>options-chat</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🏆</span>wins-board</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🍻</span>off-topic</div>
+
+          <div class="dc-cat">🎙️・Live Rooms</div>
+          <div class="dc-ch voice"><span class="hash"></span><span class="emoji">🔔</span>market-open-room</div>
+          <div class="dc-ch voice"><span class="hash"></span><span class="emoji">🌙</span>after-hours-lounge</div>
+
+          <div class="dc-cat">🎁・Perks</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎁</span>trade-on-moomoo-claim-free-gift</div>
+
+          <div class="dc-cat">💎・VIP Only</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💎</span>vip-alerts</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💼</span>vip-portfolio</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎙️</span>monthly-amas</div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:13.5px">
+        Charlie's ideas sit next to the UOV scanner — Charlie looks like a feed,
+        not a person. Calendar / Short Term / Signals all do the same job (data we monitor)
+        but are split into 3 categories.
+      </p>
+    </div>
+
+    <!-- AFTER -->
+    <div>
+      <div class="pair-label next">Proposed &nbsp;·&nbsp; tools vs. humans</div>
+      <div class="dc">
+        <div class="dc-server"><div class="mark">MST</div> Main Street Trades</div>
+        <div class="dc-list">
+          <div class="dc-cat">🏁・Getting Started</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">👋</span>welcome</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🧭</span>start-here</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">⚠️</span>disclaimer-must-read</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💳</span>manage-membership</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">📢</span>announcements</div>
+
+          <div class="dc-cat">🛠️・Paid Tools / Signals</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🔍</span>unusual-options-volume</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🏛️</span>politician-trade-alerts</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🐋</span>insider-buy-alerts</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">📊</span>earnings-this-week</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🌐</span>macro-events</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🌅</span>premarket-brief</div>
+
+          <div class="dc-cat">🤝・Partner Analysts</div>
+          <div class="dc-ch divider">━━ charlie-plattus ┃ zip-trader ━━</div>
+          <div class="dc-ch active"><span class="hash">#</span><span class="emoji">💡</span>charlie-options-ideas</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎯</span>charlie-watchlist</div>
+          <div class="dc-ch divider">━━ next-analyst ┃ service-name ━━</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💡</span>(their-feed)</div>
+
+          <div class="dc-cat">💬・Discussion</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💬</span>main-chat</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🔥</span>day-trading-chat</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎲</span>options-chat</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🏆</span>wins-board</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🍻</span>off-topic</div>
+
+          <div class="dc-cat">🎙️・Live Rooms</div>
+          <div class="dc-ch voice"><span class="hash"></span><span class="emoji">🔔</span>market-open-room</div>
+          <div class="dc-ch voice"><span class="hash"></span><span class="emoji">🌙</span>after-hours-lounge</div>
+
+          <div class="dc-cat">🎁・Perks</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎁</span>trade-on-moomoo-claim-free-gift</div>
+
+          <div class="dc-cat">💎・VIP Only</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💎</span>vip-alerts</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">💼</span>vip-portfolio</div>
+          <div class="dc-ch"><span class="hash">#</span><span class="emoji">🎙️</span>monthly-amas</div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:13.5px">
+        <strong>🛠️ Paid Tools / Signals</strong> = everything automated (the data feeds you
+        pay vendors for). <strong>🤝 Partner Analysts</strong> = humans. Each analyst gets a
+        locked, view-only divider channel above their feeds — easy to scroll, easy to
+        extend.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Why this structure works</h2>
+
+  <div class="why">
+    <div class="card">
+      <div class="num">01</div>
+      <h4>Two mental buckets, not five</h4>
+      <p>New members understand "tools" vs. "people" instantly. Calendar, Short Term, and Signals all collapse into one bucket because they all answer the same question — what is the machine watching?</p>
+    </div>
+    <div class="card">
+      <div class="num">02</div>
+      <h4>Each analyst is a brand</h4>
+      <p>The divider channel ("━━ charlie-plattus ┃ zip-trader ━━") sits inside the sidebar as a visible header. It tells the member: this isn't a feed — this is a person with their own service. You'd never confuse Charlie with the UOV scanner again.</p>
+    </div>
+    <div class="card">
+      <div class="num">03</div>
+      <h4>Drop-in slot for the next partner</h4>
+      <p>When you bring on analyst #2 (or #5), you don't restructure anything. You add a new divider + their feed channels under <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:12px">🤝・Partner Analysts</code>. Members already know to scroll there to pick their guy.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The "header divider" pattern</h2>
+  <p class="muted">Discord doesn't support nested categories. The hack everyone uses: a locked, view-only text channel whose name is just a visual separator. Members can't post in it, can't even hear notifications. It just acts as a section header inside a category.</p>
+
+  <div class="pattern">
+    <div class="row">
+      <div class="num">1</div>
+      <div>
+        <strong>Naming</strong> — use unicode block characters so the channel name reads as a header, not a normal channel:
+        <div style="margin-top:6px"><code>━━charlie-plattus┃zip-trader━━</code></div>
+        <div style="margin-top:2px"><code>━━jane-doe┃macro-investor━━</code></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="num">2</div>
+      <div>
+        <strong>Permissions</strong> — @everyone is denied <code>SEND_MESSAGES</code> and <code>ADD_REACTIONS</code>. Only Founder + Mod can post. It's purely cosmetic.
+      </div>
+    </div>
+    <div class="row">
+      <div class="num">3</div>
+      <div>
+        <strong>Per-analyst real estate</strong> — each analyst gets a divider plus 1–3 feed channels underneath (ideas / watchlist / Q&amp;A). Charlie's gets <code>#charlie-options-ideas</code> today. Easy to add <code>#charlie-watchlist</code> or <code>#ask-charlie</code> later without restructuring.
+      </div>
+    </div>
+    <div class="row">
+      <div class="num">4</div>
+      <div>
+        <strong>Discovery</strong> — pin a single message in <code>#start-here</code> linking to each analyst's divider with a one-line pitch ("Charlie Plattus — options swing trader, Zip Trader founder, posts 1–3 ideas/day"). Members tap the link, see the divider, decide if they want to follow.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What changes vs. what stays</h2>
+  <div class="pair" style="grid-template-columns:1fr">
+    <div class="pattern">
+      <h3 style="margin-top:0">Changes</h3>
+      <ul style="color:var(--text-mid);line-height:1.7;margin:8px 0">
+        <li>Delete categories: <code>📅・CALENDAR</code>, <code>⚡・SHORT TERM</code>, <code>📡・SIGNALS</code>.</li>
+        <li>Create category: <code>🛠️・PAID TOOLS / SIGNALS</code>. Move all 6 feed channels into it.</li>
+        <li>Create category: <code>🤝・PARTNER ANALYSTS</code>.</li>
+        <li>Create divider channel: <code>━━charlie-plattus┃zip-trader━━</code> (locked).</li>
+        <li>Move <code>#charlie-options-ideas</code> under the Charlie divider.</li>
+        <li>Update <code>start-here</code> pin to explain the new sections.</li>
+      </ul>
+      <h3>Stays the same</h3>
+      <ul style="color:var(--text-mid);line-height:1.7;margin:8px 0">
+        <li>All existing channels keep their permissions, history, webhooks, and member subscriptions.</li>
+        <li>Roles (Founder / Mod / VIP / Premium / Free) and their access rules don't change.</li>
+        <li>Charlie's mirror webhook keeps working — same channel ID.</li>
+        <li>Discussion, Live Rooms, Perks, VIP Only categories untouched.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="footnote">
+    Implementation: one idempotent node script (~150 LOC). Same pattern as the existing
+    <code style="background:rgba(255,255,255,0.04);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:12px;color:var(--teal)">setup-server.js</code>
+    + <code style="background:rgba(255,255,255,0.04);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:12px;color:var(--teal)">add-emojis.js</code> —
+    re-runnable, no data loss, can be reverted by dragging in the Discord UI. Say the word
+    and I'll wire it up.
+  </p>
+</section>
+
+</body>
+</html>
