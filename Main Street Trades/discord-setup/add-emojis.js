@@ -31,9 +31,13 @@ const CHANNELS = {
   'unusual-options-volume': '🔍',
   'politician-trade-alerts': '🏛️',
   'insider-buy-alerts': '🐋',
+  'morning-briefing': '🧨',
+  'stock-briefs': '💡',
   // PARTNER ANALYSTS
   // (the divider channel ━━charlie-plattus┃zip-trader━━ has no emoji prefix on purpose)
   'charlie-options-ideas': '💡',
+  'long-term-price-analysis': '🎯',
+  'leaps-ideas': '🗓️',
   // PERKS
   'trade-on-moomoo-claim-free-gift': '🎁',
   // DISCUSSION

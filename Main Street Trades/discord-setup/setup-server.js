@@ -138,9 +138,13 @@ const TOPICS = {
   'unusual-options-volume': 'UOV scanner — large block + sweep prints worth a look.',
   'politician-trade-alerts': 'Congressional + Senate trade disclosures (Capitol Trades / Quiver). Follow the money.',
   'insider-buy-alerts': 'Form 4 insider buys — C-suite and 10%+ holders putting their own cash in.',
+  'morning-briefing': 'Morning pre-market briefing — mirrored from upstream. Read-only.',
+  'stock-briefs': 'Stock brief — single-ticker deep dives mirrored from upstream. Read-only.',
 
   '━━charlie-plattus┃zip-trader━━': 'Section header — Charlie Plattus, founder of Zip Trader. Read-only.',
   'charlie-options-ideas': "Charlie's options ideas — mirrored from his channel. Read-only.",
+  'long-term-price-analysis': "Charlie's longer-horizon price analysis — multi-week / multi-month setups. Read-only.",
+  'leaps-ideas': "Charlie's LEAPS — long-dated options ideas. Mirrored. Read-only.",
 
   'trade-on-moomoo-claim-free-gift': 'Member perks — partner offers, broker bonuses, free trials. New deals dropped here.',
 
@@ -171,6 +175,10 @@ const ALERT_CHANNELS = new Set([
   'earnings-this-week',
   'macro-events',
   'premarket-brief',
+  'morning-briefing',
+  'stock-briefs',
+  'long-term-price-analysis',
+  'leaps-ideas',
   '━━charlie-plattus┃zip-trader━━',
   'vip-alerts',
   'vip-portfolio',
@@ -207,6 +215,8 @@ const ARCHITECTURE = [
       { name: 'earnings-this-week', type: 'text' },
       { name: 'macro-events', type: 'text' },
       { name: 'premarket-brief', type: 'text' },
+      { name: 'morning-briefing', type: 'text' },
+      { name: 'stock-briefs', type: 'text' },
     ],
   },
   {
@@ -214,6 +224,8 @@ const ARCHITECTURE = [
     channels: [
       { name: '━━charlie-plattus┃zip-trader━━', type: 'text' },
       { name: 'charlie-options-ideas', type: 'text' },
+      { name: 'long-term-price-analysis', type: 'text' },
+      { name: 'leaps-ideas', type: 'text' },
     ],
   },
   {
