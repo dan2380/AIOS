@@ -146,7 +146,7 @@ const TOPICS = {
   'long-term-price-analysis': "Charlie's longer-horizon price analysis — multi-week / multi-month setups. Read-only.",
   'leaps-ideas': "Charlie's LEAPS — long-dated options ideas. Mirrored. Read-only.",
 
-  'trade-on-moomoo-claim-free-gift': 'Member perks — partner offers, broker bonuses, free trials. New deals dropped here.',
+  'claim-free-stocks-on-moomoo': 'Claim your free stocks on MooMoo — broker bonus. Read-only.',
 
   'main-chat': 'General community chat. Be useful or be quiet.',
   'day-trading-chat': 'Live day-trading talk. Fast-moving.',
@@ -204,6 +204,7 @@ const ARCHITECTURE = [
       { name: 'support-tickets', type: 'text' },
       { name: 'feature-suggestions', type: 'text' },
       { name: 'announcements', type: 'text' },
+      { name: 'claim-free-stocks-on-moomoo', type: 'text' },
     ],
   },
   {
@@ -246,12 +247,6 @@ const ARCHITECTURE = [
       { name: 'market-open-room', type: 'voice' },
       { name: 'fomc-watch', type: 'voice' },
       { name: 'after-hours-lounge', type: 'voice' },
-    ],
-  },
-  {
-    category: 'PERKS',
-    channels: [
-      { name: 'trade-on-moomoo-claim-free-gift', type: 'text' },
     ],
   },
   {
@@ -469,14 +464,6 @@ function buildOverwritesForChannel(channelName, categoryName, roles, botUserId) 
     [Premium, VIP].forEach((r) => {
       if (!r) return;
       ow.push({ id: r.id, allow: allowPost });
-    });
-  }
-
-  // PERKS — everyone with a role can view (read-only). Founder/Mod post curated offers.
-  if (categoryName === 'PERKS') {
-    [Free, Premium, VIP].forEach((r) => {
-      if (!r) return;
-      ow.push({ id: r.id, allow: allowView, deny: [P.SendMessages] });
     });
   }
 

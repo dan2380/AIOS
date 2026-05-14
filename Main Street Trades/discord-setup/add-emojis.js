@@ -38,8 +38,8 @@ const CHANNELS = {
   'charlie-options-ideas': '💡',
   'long-term-price-analysis': '🎯',
   'leaps-ideas': '🗓️',
-  // PERKS
-  'trade-on-moomoo-claim-free-gift': '🎁',
+  // Member perks (in GETTING STARTED)
+  'claim-free-stocks-on-moomoo': '🎁',
   // DISCUSSION
   'main-chat': '💬',
   'day-trading-chat': '🔥',
@@ -66,7 +66,6 @@ const CATEGORIES = {
   'PARTNER ANALYSTS': '🤝',
   'DISCUSSION': '💬',
   'LIVE ROOMS': '🎙️',
-  'PERKS': '🎁',
   'VIP ONLY': '💎',
 };
 
