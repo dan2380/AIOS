@@ -47,10 +47,16 @@ def add(prefix, source_key):
     ch = os.environ.get(source_key) or os.environ.get(f"{prefix}SOURCE_CHANNEL_ID")
     wh = os.environ.get(f"{prefix}WEBHOOK_URL")
     nm = os.environ.get(f"{prefix}WEBHOOK_NAME")
+    override = os.environ.get(f"{prefix}DISPLAY_NAME_OVERRIDE")
     if ch and wh:
-        routes.append({"channel": ch, "webhook": wh, "webhook_name": nm or ""})
+        route = {"channel": ch, "webhook": wh, "webhook_name": nm or ""}
+        if override:
+            route["display_name_override"] = override
+        routes.append(route)
 
-add("UOV_MIRROR_",              "UOV_MIRROR_SOURCE_CHANNEL_ID")
+# UOV_MIRROR_ route removed 2026-05-16 — Tradytics now pings MST directly.
+# (UOV_MIRROR_USER_TOKEN + UOV_MIRROR_SOURCE_SERVER_ID are kept in .env because
+# they're the shared selfbot auth + source guild for every route below.)
 add("CHARLIE_IDEAS_MIRROR_",    "Charlie_Options_Channel_ID")
 add("EARNINGS_MIRROR_",         "EARNINGS_MIRROR_SOURCE_CHANNEL_ID")
 add("MORNING_BRIEFING_MIRROR_", "MORNING_BRIEFING_MIRROR_SOURCE_CHANNEL_ID")
