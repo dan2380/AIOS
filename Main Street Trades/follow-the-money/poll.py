@@ -69,10 +69,15 @@ RED = 0xB22222
 GRAY = 0x7A8A95
 
 # Twemoji 72x72 — same glyph set Discord renders inline emojis with, so they
-# match the channel-name prefixes visually. Used as embed author icon + thumbnail.
+# match the channel-name prefixes visually. Author icon = direction signal
+# (green/red/gray). Thumbnail = channel-theme emoji (so the feed source stays
+# visually anchored on the right side of every embed).
 TWEMOJI = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72"
-ICON_INSIDER = f"{TWEMOJI}/1f50d.png"     # 🔍 magnifier
-ICON_POLITICIAN = f"{TWEMOJI}/1f3db.png"  # 🏛️ classical building
+ICON_BUY = f"{TWEMOJI}/1f7e2.png"         # 🟢 green circle — opens/longs
+ICON_SELL = f"{TWEMOJI}/1f534.png"        # 🔴 red circle   — closes/shorts
+ICON_NEUTRAL = f"{TWEMOJI}/26aa.png"      # ⚪ white circle — exchange/unknown
+ICON_INSIDER_THUMB = f"{TWEMOJI}/1f50d.png"      # 🔍 magnifier
+ICON_POLITICIAN_THUMB = f"{TWEMOJI}/1f3db.png"   # 🏛️ classical building
 
 
 # ────────────────────────────────────────── http
@@ -328,11 +333,11 @@ def post_insider_buy(filing: dict, parsed: dict) -> None:
     embed = {
         "author": {
             "name": "Form 4 · Insider Buy",
-            "icon_url": ICON_INSIDER,
+            "icon_url": ICON_BUY,  # always green — feed is buys-only
         },
         "description": f"**Open-Market Purchase**\n_{issuer}_" if issuer else "**Open-Market Purchase**",
         "color": TEAL,
-        "thumbnail": {"url": ICON_INSIDER},
+        "thumbnail": {"url": ICON_INSIDER_THUMB},
         "fields": [
             {"name": "Symbol",    "value": ticker,                  "inline": True},
             {"name": "Total",     "value": f"${total_value:,.0f}",  "inline": True},
@@ -486,20 +491,20 @@ def post_politician(row: dict, chamber: str) -> None:
 
     t = tx_type.lower()
     if "purchase" in t:
-        emoji, verb, color = "🟢", "BOUGHT", TEAL
+        emoji, verb, color, author_icon = "🟢", "BOUGHT", TEAL, ICON_BUY
     elif "sale" in t or "sold" in t:
-        emoji, verb, color = "🔴", "SOLD", RED
+        emoji, verb, color, author_icon = "🔴", "SOLD", RED, ICON_SELL
     elif "exchange" in t:
-        emoji, verb, color = "🔄", "EXCHANGED", GRAY
+        emoji, verb, color, author_icon = "🔄", "EXCHANGED", GRAY, ICON_NEUTRAL
     else:
-        emoji, verb, color = "⚪", (tx_type.upper() or "TRANSACTED"), GRAY
+        emoji, verb, color, author_icon = "⚪", (tx_type.upper() or "TRANSACTED"), GRAY, ICON_NEUTRAL
 
     # "FL19" → "FL-19" for readability; Senate's district is just state code.
     district_fmt = district
     if chamber == "House" and len(district) > 2 and district[2:].isdigit():
         district_fmt = f"{district[:2]}-{district[2:]}"
 
-    headline = f"{emoji} **{verb}** ${ticker}" if ticker != "—" else f"{emoji} **{verb}**"
+    headline = f"**{verb}** ${ticker}" if ticker != "—" else f"**{verb}**"
     description = headline
     if asset_desc:
         description += f"\n_{asset_desc}_"
@@ -507,11 +512,11 @@ def post_politician(row: dict, chamber: str) -> None:
     embed = {
         "author": {
             "name": f"{chamber} Disclosure · STOCK Act",
-            "icon_url": ICON_POLITICIAN,
+            "icon_url": author_icon,
         },
         "description": description,
         "color": color,
-        "thumbnail": {"url": ICON_POLITICIAN},
+        "thumbnail": {"url": ICON_POLITICIAN_THUMB},
         "fields": [
             {"name": "Symbol",   "value": ticker,                              "inline": True},
             {"name": "Amount",   "value": amount,                              "inline": True},
