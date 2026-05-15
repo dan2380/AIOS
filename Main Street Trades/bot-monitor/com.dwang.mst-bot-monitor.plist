@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dwang.mst-bot-monitor</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>"$HOME/Library/Application Support/MainStreetTrades/bot-monitor/run-monitor.sh"</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/dwang/Library/Application Support/MainStreetTrades/bot-monitor</string>
+
+  <!-- Daily-at-6-AM-NY. launchd fires at system-local 18:00 (EDT match) and
+       19:00 (EST match); run-monitor.sh's TZ-aware gate ensures only the
+       slot that lands on NY hour 06 posts a report. System is currently
+       UTC+8 (BKK); update Hours if the laptop moves timezones.
+       RunAtLoad=true is safe because the gate will silently skip unless
+       it's actually 6 AM in New York at load time. -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>18</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key>
+      <integer>19</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>TZ</key>
+    <string>America/New_York</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/dwang/Library/Logs/MainStreetTrades/bot-monitor/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/dwang/Library/Logs/MainStreetTrades/bot-monitor/launchd.err.log</string>
+</dict>
+</plist>
