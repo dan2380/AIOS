@@ -61,7 +61,7 @@ POLITICIAN_WEBHOOK = os.environ.get("FTM_POLITICIAN_WEBHOOK_URL", "").strip()
 FMP_API_KEY = os.environ.get("FMP_API_KEY", "").strip()
 DRY_RUN = bool(os.environ.get("FTM_DRY_RUN"))
 
-POLITICIAN_EVERY_N_CYCLES = 5  # politician disclosures land in batches
+POLITICIAN_EVERY_N_CYCLES = 15  # every 15 min — 2 endpoints × 96/day = 192/day, under FMP free 250 cap
 MAX_POSTS_PER_RUN = 8  # safety cap to avoid spamming on backlog
 
 TEAL = 0x1EA8BA
@@ -411,7 +411,9 @@ def run_insider_buys() -> None:
 def fetch_fmp(endpoint: str) -> list[dict]:
     if not FMP_API_KEY:
         return []
-    url = f"https://financialmodelingprep.com/api/v4/{endpoint}?page=0&apikey={FMP_API_KEY}"
+    # FMP migrated to /stable/ in 2025; the legacy /api/v4/*-rss-feed endpoints
+    # were retired Aug 31 2025 and now 403 with a "Legacy Endpoint" message.
+    url = f"https://financialmodelingprep.com/stable/{endpoint}?apikey={FMP_API_KEY}"
     try:
         body = http_get(url, headers={"User-Agent": WEBHOOK_UA})
         data = json.loads(body)
@@ -419,21 +421,27 @@ def fetch_fmp(endpoint: str) -> list[dict]:
         print(f"[politician] FMP fetch failed ({endpoint}): {e}", file=sys.stderr)
         return []
     if not isinstance(data, list):
-        # FMP returns {"Error Message": "..."} on auth/quota failures.
+        # FMP returns {"Error Message": "..."} on auth/quota/scope failures.
         print(f"[politician] FMP non-list response ({endpoint}): {str(data)[:200]}", file=sys.stderr)
         return []
     return data
 
 
 def politician_key(row: dict) -> str:
-    """Stable composite key for dedup — FMP rows lack a single unique ID."""
+    """Stable composite key for dedup — FMP rows lack a single unique ID.
+
+    Schema (FMP /stable/senate-latest + /stable/house-latest, 2026):
+      symbol, disclosureDate, transactionDate, firstName, lastName, office,
+      district, owner, assetDescription, assetType, type, amount, comment, link
+    """
     parts = [
-        row.get("link") or row.get("disclosureLink") or "",
-        row.get("representative") or row.get("senator") or "",
-        row.get("ticker") or row.get("assetDescription") or "",
+        row.get("firstName") or "",
+        row.get("lastName") or "",
+        row.get("symbol") or row.get("assetDescription") or "",
         row.get("transactionDate") or "",
         row.get("type") or "",
         row.get("amount") or "",
+        row.get("owner") or "",
     ]
     return "|".join(str(p) for p in parts)
 
@@ -446,14 +454,20 @@ def fmt_amount(amount: str | None) -> str:
 
 
 def post_politician(row: dict, chamber: str) -> None:
-    rep = row.get("representative") or row.get("senator") or "—"
-    ticker = (row.get("ticker") or "").strip().upper() or "—"
+    first = (row.get("firstName") or "").strip()
+    last = (row.get("lastName") or "").strip()
+    name = f"{first} {last}".strip() or "—"
+    district = (row.get("district") or "").strip()
+    title_prefix = "Sen." if chamber == "Senate" else "Rep."
+
+    ticker = (row.get("symbol") or "").strip().upper() or "—"
     asset_desc = row.get("assetDescription") or ""
     tx_type = (row.get("type") or "").strip()
     amount = fmt_amount(row.get("amount"))
     tx_date = row.get("transactionDate") or ""
     disc_date = row.get("disclosureDate") or ""
-    link = row.get("link") or row.get("disclosureLink") or ""
+    owner = (row.get("owner") or "").strip()
+    link = row.get("link") or ""
 
     t = tx_type.lower()
     if "purchase" in t:
@@ -465,19 +479,29 @@ def post_politician(row: dict, chamber: str) -> None:
     else:
         emoji, verb, color = "⚪", (tx_type.upper() or "TRANSACTED"), GRAY
 
+    # "Rep. Byron Donalds (FL-19)" / "Sen. Gary Peters (MI)"
+    district_fmt = district
+    if chamber == "House" and len(district) > 2 and district[2:].isdigit():
+        district_fmt = f"{district[:2]}-{district[2:]}"
+    who = f"{title_prefix} {name}" + (f" ({district_fmt})" if district_fmt else "")
+
     desc_lines = [f"**{verb}** `{ticker}` — {amount}"]
-    if asset_desc and ticker == "—":
+    if asset_desc:
+        # Always show the asset description; FMP tickers can be blank for some
+        # bonds/options and the description is the human-readable disambiguator.
         desc_lines.append(f"_{asset_desc}_")
     meta = []
     if tx_date:
         meta.append(f"Tx: {tx_date}")
     if disc_date:
         meta.append(f"Disclosed: {disc_date}")
+    if owner and owner.lower() not in ("self", ""):
+        meta.append(f"Owner: {owner}")
     if meta:
         desc_lines.append("  ·  ".join(meta))
 
     embed = {
-        "title": f"{emoji} {chamber} · {rep}",
+        "title": f"{emoji} {who}",
         "description": "\n".join(desc_lines),
         "color": color,
         "footer": {"text": f"STOCK Act disclosure · {chamber}"},
@@ -531,12 +555,8 @@ def run_politician() -> None:
         print("[politician] no FMP_API_KEY — get a free key at "
               "https://site.financialmodelingprep.com/developer and add to .env")
         return
-    run_politician_one("Senate", "senate-trading-rss-feed", "senate_seen.txt")
-    # FMP names the House endpoint awkwardly. If this 404s once the key is set,
-    # swap to "house-trading-rss-feed" or "senate-disclosure-rss-feed" — both
-    # endpoints have been documented at different points. Composite-key dedup
-    # makes any overlap harmless.
-    run_politician_one("House", "senate-disclosure-rss-feed", "house_seen.txt")
+    run_politician_one("Senate", "senate-latest", "senate_seen.txt")
+    run_politician_one("House", "house-latest", "house_seen.txt")
 
 
 # ────────────────────────────────────────── main

@@ -104,6 +104,13 @@ PY
   chmod 600 "$RUNTIME/.env"
 else
   echo "→ webhooks already configured in .env — skipping creation"
+  # Always resync .env to runtime so newly-added keys (FMP_API_KEY etc.)
+  # propagate even on no-op installs.
+  if [[ -f "$ENV_SRC" ]]; then
+    cp -p "$ENV_SRC" "$RUNTIME/.env"
+    chmod 600 "$RUNTIME/.env"
+    echo "→ resynced .env to runtime"
+  fi
 fi
 
 # ── 3. Install / refresh launchd plist ─────────────────────────────────

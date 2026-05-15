@@ -5,14 +5,14 @@ MST poller that mirrors two free public-money signals into Discord:
 | Channel | Source | Latency | Auth needed |
 |---|---|---|---|
 | `1504326226175725730` — Insider Buys | SEC EDGAR Form 4 Atom feed, filtered to open-market purchases (code `P`) | ~60s | none |
-| `1504326222078021794` — Politician Trades | Financial Modeling Prep (Senate + House STOCK Act disclosures) | ~5 min | free FMP API key |
+| `1504326222078021794` — Politician Trades | Financial Modeling Prep `stable/senate-latest` + `stable/house-latest` | ~15 min | free FMP API key |
 
 ## How it runs
 
 - One `launchctl` agent: `com.dwang.mst-follow-the-money`
 - Fires `run-poll.sh` every 60s
 - Insider-buy poll: every cycle (60s)
-- Politician poll: every 5th cycle (~5 min) — disclosures land in batches, no benefit to polling faster
+- Politician poll: every 15th cycle (~15 min) — sized to keep us under FMP's 250-call/day free quota (2 endpoints × 96 cycles/day = 192/day, ~58 in reserve for retries / manual tests)
 - State files live at `~/Library/Application Support/MainStreetTrades/follow-the-money/state/`
 
 ## Install
@@ -96,9 +96,12 @@ The house-stock-watcher and senate-stock-watcher S3 buckets all returned 403 by
 2026 (project went stale circa 2023). CapitolTrades' public BFF endpoint returns
 503 from a broken Lambda. Quiver Quantitative requires auth on every endpoint.
 
-FMP's free tier (250 req/day) covers our polling budget with margin, and the
-endpoints (`senate-trading-rss-feed`, `senate-disclosure-rss-feed`) return both
-chambers in a single feed.
+FMP's free tier (250 req/day) covers our polling budget with margin. The
+`stable/senate-latest` and `stable/house-latest` endpoints return the 100 most
+recent disclosures per chamber with full transaction details (ticker, type,
+amount range, transaction + disclosure dates, owner, district, official PDF
+link). Note: the older `/api/v4/*-rss-feed` endpoints were retired Aug 31 2025
+and now 403 with a "Legacy Endpoint" message.
 
 ## Why SEC direct for insiders?
 
