@@ -68,6 +68,12 @@ TEAL = 0x1EA8BA
 RED = 0xB22222
 GRAY = 0x7A8A95
 
+# Twemoji 72x72 — same glyph set Discord renders inline emojis with, so they
+# match the channel-name prefixes visually. Used as embed author icon + thumbnail.
+TWEMOJI = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72"
+ICON_INSIDER = f"{TWEMOJI}/1f50d.png"     # 🔍 magnifier
+ICON_POLITICIAN = f"{TWEMOJI}/1f3db.png"  # 🏛️ classical building
+
 
 # ────────────────────────────────────────── http
 
@@ -317,17 +323,26 @@ def post_insider_buy(filing: dict, parsed: dict) -> None:
     reporter = parsed["reporter"] or "Insider"
     role = parsed["role"]
 
-    desc_lines = [
-        f"**{reporter}** ({role})",
-        f"bought **${total_value:,.0f}** of **{issuer}**",
-        f"{total_shares:,.0f} shares @ ${avg_price:,.2f} on {tx_date}",
-    ]
+    # Layout mirrors Tradytics UOV: small author label + icon, bold one-line
+    # headline as description, 3-up inline fields, big thumbnail, source footer.
     embed = {
-        "title": f"🟢 Insider Buy · {ticker}",
-        "url": filing.get("link") or "",
-        "description": "\n".join(desc_lines),
+        "author": {
+            "name": "Form 4 · Insider Buy",
+            "icon_url": ICON_INSIDER,
+        },
+        "description": f"**Open-Market Purchase**\n_{issuer}_" if issuer else "**Open-Market Purchase**",
         "color": TEAL,
-        "footer": {"text": "SEC Form 4 · open-market purchase (code P)"},
+        "thumbnail": {"url": ICON_INSIDER},
+        "fields": [
+            {"name": "Symbol",    "value": ticker,                  "inline": True},
+            {"name": "Total",     "value": f"${total_value:,.0f}",  "inline": True},
+            {"name": "Avg Price", "value": f"${avg_price:,.2f}",    "inline": True},
+            {"name": "Insider",   "value": reporter[:40],           "inline": True},
+            {"name": "Role",      "value": role,                    "inline": True},
+            {"name": "Tx Date",   "value": tx_date or "—",          "inline": True},
+        ],
+        "footer": {"text": "Source: SEC EDGAR · Form 4 code P"},
+        "url": filing.get("link") or "",
     }
     if filing.get("updated"):
         embed["timestamp"] = filing["updated"]
@@ -466,7 +481,7 @@ def post_politician(row: dict, chamber: str) -> None:
     amount = fmt_amount(row.get("amount"))
     tx_date = row.get("transactionDate") or ""
     disc_date = row.get("disclosureDate") or ""
-    owner = (row.get("owner") or "").strip()
+    owner = (row.get("owner") or "").strip() or "Self"
     link = row.get("link") or ""
 
     t = tx_type.lower()
@@ -479,32 +494,33 @@ def post_politician(row: dict, chamber: str) -> None:
     else:
         emoji, verb, color = "⚪", (tx_type.upper() or "TRANSACTED"), GRAY
 
-    # "Rep. Byron Donalds (FL-19)" / "Sen. Gary Peters (MI)"
+    # "FL19" → "FL-19" for readability; Senate's district is just state code.
     district_fmt = district
     if chamber == "House" and len(district) > 2 and district[2:].isdigit():
         district_fmt = f"{district[:2]}-{district[2:]}"
-    who = f"{title_prefix} {name}" + (f" ({district_fmt})" if district_fmt else "")
 
-    desc_lines = [f"**{verb}** `{ticker}` — {amount}"]
+    headline = f"{emoji} **{verb}** ${ticker}" if ticker != "—" else f"{emoji} **{verb}**"
+    description = headline
     if asset_desc:
-        # Always show the asset description; FMP tickers can be blank for some
-        # bonds/options and the description is the human-readable disambiguator.
-        desc_lines.append(f"_{asset_desc}_")
-    meta = []
-    if tx_date:
-        meta.append(f"Tx: {tx_date}")
-    if disc_date:
-        meta.append(f"Disclosed: {disc_date}")
-    if owner and owner.lower() not in ("self", ""):
-        meta.append(f"Owner: {owner}")
-    if meta:
-        desc_lines.append("  ·  ".join(meta))
+        description += f"\n_{asset_desc}_"
 
     embed = {
-        "title": f"{emoji} {who}",
-        "description": "\n".join(desc_lines),
+        "author": {
+            "name": f"{chamber} Disclosure · STOCK Act",
+            "icon_url": ICON_POLITICIAN,
+        },
+        "description": description,
         "color": color,
-        "footer": {"text": f"STOCK Act disclosure · {chamber}"},
+        "thumbnail": {"url": ICON_POLITICIAN},
+        "fields": [
+            {"name": "Symbol",   "value": ticker,                              "inline": True},
+            {"name": "Amount",   "value": amount,                              "inline": True},
+            {"name": "Owner",    "value": owner,                               "inline": True},
+            {"name": title_prefix.rstrip("."),  "value": name,                 "inline": True},
+            {"name": "District", "value": district_fmt or "—",                 "inline": True},
+            {"name": "Tx Date",  "value": tx_date or "—",                      "inline": True},
+        ],
+        "footer": {"text": f"Source: FMP · {chamber} · disclosed {disc_date}" if disc_date else f"Source: FMP · {chamber}"},
     }
     if link:
         embed["url"] = link
