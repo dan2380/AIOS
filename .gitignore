@@ -1,8 +1,19 @@
 .env
 .env.local
+.env.bak.*
 .DS_Store
 *.log
 __pycache__/
 node_modules/
 .claude/settings.local.json
+.codex/
+.vscode/
 audits/
+
+# Generated reports that embed bearer credentials (Discord webhook URLs etc.)
+Main Street Trades/Tradytics Webhooks*.html
+references/video-research/*/video.*
+references/video-research/*/*.vtt
+references/video-research/*/*.srt
+references/video-research/*/frames/
+references/video-research/*/contact-sheet.jpg
