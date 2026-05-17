@@ -20,6 +20,9 @@
  * ============================================================================
  */
 
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const { HEADLINERS } = require('../headliners');
 
 const FINNHUB = 'https://finnhub.io/api/v1';
@@ -27,15 +30,72 @@ const YAHOO = 'https://query1.finance.yahoo.com/v7/finance/chart';
 
 const UA = 'MainStreetTrades-CalendarCron/2.0';
 
-const _profileCache = new Map(); // symbol → { marketCap, name }
-const _moveCache = new Map();    // symbol → avg |post-er next-day move| as decimal (0.07 = 7%)
+// In-memory caches for the current run.
+const _profileCache = new Map(); // symbol → { marketCap, name } | null
+const _moveCache = new Map();    // symbol → number (avg move decimal) | null
 
-async function fetchJson(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA } });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} ${res.statusText} ← ${url.replace(/token=[^&]+/, 'token=***')}`);
+// Persistent disk cache — survives across runs so Yahoo rate-limits in a
+// single run don't permanently kill a ticker's data. Avg post-earnings move
+// changes slowly (only on new earnings) so a 7-day TTL is safe.
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const CACHE_DIR = path.join(os.homedir(), '.cache', 'mst-calendar-cron');
+const CACHE_FILE = path.join(CACHE_DIR, 'anticipation-cache.json');
+
+let _disk = null;
+function loadDisk() {
+  if (_disk) return _disk;
+  try {
+    const raw = fs.readFileSync(CACHE_FILE, 'utf8');
+    _disk = JSON.parse(raw);
+    if (!_disk.profiles || !_disk.moves) throw new Error('shape');
+  } catch (_e) {
+    _disk = { profiles: {}, moves: {} };
   }
-  return res.json();
+  return _disk;
+}
+function saveDisk() {
+  if (!_disk) return;
+  try {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(_disk));
+  } catch (e) {
+    console.warn(`⚠ disk cache write failed: ${e.message}`);
+  }
+}
+function diskGet(bucket, key) {
+  const d = loadDisk();
+  const entry = d[bucket]?.[key];
+  if (!entry) return undefined;
+  if (Date.now() - entry.t > CACHE_TTL_MS) return undefined;
+  return entry.v;
+}
+function diskSet(bucket, key, value) {
+  const d = loadDisk();
+  d[bucket][key] = { v: value, t: Date.now() };
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Wrap fetch with 2 retries + exponential backoff on 5xx/429 + transient
+// network failures. Returns parsed JSON or throws.
+async function fetchJson(url, { attempts = 3, baseDelayMs = 350 } = {}) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA } });
+      if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+        lastErr = new Error(`HTTP ${res.status} ${res.statusText}`);
+      } else if (!res.ok) {
+        throw new Error(`HTTP ${res.status} ${res.statusText} ← ${url.replace(/token=[^&]+/, 'token=***')}`);
+      } else {
+        return res.json();
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+    if (i < attempts - 1) await sleep(baseDelayMs * Math.pow(2, i));
+  }
+  throw lastErr;
 }
 
 function isHeadliner(symbol) {
@@ -51,15 +111,21 @@ function isHeadliner(symbol) {
 async function getProfile(symbol, finnhubKey) {
   if (!finnhubKey) return null;
   if (_profileCache.has(symbol)) return _profileCache.get(symbol);
+  const cached = diskGet('profiles', symbol);
+  if (cached !== undefined) {
+    _profileCache.set(symbol, cached);
+    return cached;
+  }
   try {
     const json = await fetchJson(`${FINNHUB}/stock/profile2?symbol=${encodeURIComponent(symbol)}&token=${finnhubKey}`);
-    // Finnhub returns marketCapitalization in MILLIONS of USD.
     const marketCap = json.marketCapitalization ? Number(json.marketCapitalization) * 1e6 : null;
     const profile = { marketCap, name: json.name || null };
     _profileCache.set(symbol, profile);
+    diskSet('profiles', symbol, profile);
     return profile;
   } catch (_e) {
     _profileCache.set(symbol, null);
+    // Do NOT cache failure to disk — let the next run retry.
     return null;
   }
 }
@@ -112,6 +178,11 @@ function ymdPlusDays(ymd, days) {
 // even when the earnings date itself isn't a trading day.
 async function getAvgEarningsReaction(symbol, finnhubKey) {
   if (_moveCache.has(symbol)) return _moveCache.get(symbol);
+  const cached = diskGet('moves', symbol);
+  if (cached !== undefined) {
+    _moveCache.set(symbol, cached);
+    return cached;
+  }
   const dates = await getHistoricalEarningsDates(symbol, finnhubKey);
   if (dates.length === 0) {
     _moveCache.set(symbol, null);
@@ -121,7 +192,7 @@ async function getAvgEarningsReaction(symbol, finnhubKey) {
   for (const erDate of dates) {
     const ohlc = await fetchDailyOhlc(symbol, ymdMinusDays(erDate, 10), ymdPlusDays(erDate, 10));
     if (!ohlc) continue;
-    const target = Math.floor(new Date(erDate + 'T20:00:00Z').getTime() / 1000); // 4pm ET ish
+    const target = Math.floor(new Date(erDate + 'T20:00:00Z').getTime() / 1000);
     let idxBefore = -1;
     for (let i = 0; i < ohlc.timestamps.length; i++) {
       if (ohlc.timestamps[i] <= target) idxBefore = i;
@@ -139,6 +210,7 @@ async function getAvgEarningsReaction(symbol, finnhubKey) {
   }
   const avg = moves.reduce((acc, m) => acc + m, 0) / moves.length;
   _moveCache.set(symbol, avg);
+  diskSet('moves', symbol, avg);
   return avg;
 }
 
@@ -162,7 +234,7 @@ function fullScore(row, { marketCap, avgMove }) {
 
 // Enrich every earnings row with { profile, avgMove, score }. Bounded
 // concurrency so we don't hammer Finnhub or Yahoo.
-async function enrichAndScore(rows, { finnhubKey, concurrency = 6, maxEnrichCount = 80 } = {}) {
+async function enrichAndScore(rows, { finnhubKey, concurrency = 3, maxEnrichCount = 80, interCallDelayMs = 120 } = {}) {
   const ranked = [...rows].sort((a, b) => baseScore(b) - baseScore(a));
   const toEnrich = ranked.slice(0, maxEnrichCount);
   const enriched = new Map();
@@ -180,9 +252,11 @@ async function enrichAndScore(rows, { finnhubKey, concurrency = 6, maxEnrichCoun
         avgMove,
         score: fullScore(r, { marketCap: profile?.marketCap, avgMove }),
       });
+      if (interCallDelayMs > 0) await sleep(interCallDelayMs);
     }
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, toEnrich.length) }, () => worker()));
+  saveDisk();
   // Anything beyond maxEnrichCount keeps a base score so it still ranks below
   // enriched names but doesn't disappear from totals.
   return rows.map((r) => {
