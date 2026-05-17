@@ -1,0 +1,22 @@
+{
+  "name": "main-street-trades-calendar-cron",
+  "version": "2.0.0",
+  "description": "Daily 6am ET cron — posts earnings + macro calendar to Discord. Weekly: branded most-anticipated graphic.",
+  "private": true,
+  "type": "commonjs",
+  "main": "post-calendar.js",
+  "scripts": {
+    "post": "node post-calendar.js",
+    "dry": "DRY_RUN=1 node post-calendar.js",
+    "dry:weekly": "DRY_RUN=1 FORCE_WEEKLY=1 SIMULATE_DOW=Sun node post-calendar.js",
+    "preview:graphic": "node scripts/preview-graphic.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.59.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
