@@ -10,19 +10,10 @@ mkdir -p "$LOG_DIR"
 
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).log"
 
-# Load .env (token + guild + finnhub key). Prefer the runtime-local copy
-# created by install.sh; fall back to ../.env when run from the repo.
-ENV_FILE=""
-[ -f "$HERE/.env" ] && ENV_FILE="$HERE/.env"
-[ -z "$ENV_FILE" ] && [ -f "$HERE/../.env" ] && ENV_FILE="$HERE/../.env"
-if [ -n "$ENV_FILE" ]; then
-  set -a
-  set +u
-  # shellcheck disable=SC1091
-  . "$ENV_FILE"
-  set -u
-  set +a
-fi
+# NOTE: We deliberately do NOT bash-source .env here. The Node script
+# uses dotenv.config() which handles multi-word unquoted values correctly,
+# whereas bash sourcing chokes on lines like `VAR=Two Words` (the second
+# word gets executed as a command). Past breakage: 2026-05-17.
 
 NODE_BIN="${NODE_BIN:-/opt/homebrew/bin/node}"
 if [ ! -x "$NODE_BIN" ]; then NODE_BIN="$(command -v node || true)"; fi
