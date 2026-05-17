@@ -447,56 +447,14 @@ async function main() {
     console.warn('⚠ FINNHUB_API_KEY not set — skipping earnings post. Sign up at finnhub.io.');
   } else {
     try {
-      const wantWeekly = process.env.FORCE_WEEKLY || dow === 'Sun';
-      if (wantWeekly && !isAlreadyPostedToday('earnings-weekly')) {
-        const rows = await fetchEarnings(weekStart, weekEnd);
-        console.log(`→ enriching ${rows.length} weekly earnings rows (top 80) — market cap + last-4Q reaction…`);
-        const enriched = await enrichAndScore(rows, { finnhubKey: FINNHUB_API_KEY });
-        const byDay = {};
-        for (const r of enriched) (byDay[r.date] ||= []).push(r);
-        const sortedDays = Object.keys(byDay).sort();
-        const ordered = {};
-        for (const d of sortedDays) ordered[d] = byDay[d];
-
-        // Text embed
-        await postEmbed(
-          earningsCh,
-          buildEarningsEmbedWeekly(ordered, weekStart, weekEnd),
-          'earnings-weekly',
-        );
-
-        // Branded MST "Most Anticipated" graphic (Sunday-only, weekly bonus).
-        // For the public-facing graphic we filter to $5B+ market caps so
-        // recognizable names lead. Small-caps still appear in the text embed.
-        try {
-          const MIN_CAP_FOR_GRAPHIC = 5e9;
-          const topTen = [...enriched]
-            .filter((r) => r.profile?.marketCap && r.profile.marketCap >= MIN_CAP_FOR_GRAPHIC)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 10);
-          if (topTen.length < 5) {
-            console.warn(`⚠ only ${topTen.length} qualifying tickers for graphic — skipping`);
-            throw new Error('insufficient large-cap tickers this week');
-          }
-          const pngPath = await generateAnticipatedGraphic({
-            tickers: topTen,
-            weekStart,
-            weekEnd,
-          });
-          if (DRY_RUN) {
-            console.log(`-- DRY_RUN: would post branded graphic ${pngPath} to #${earningsCh.name} --`);
-          } else {
-            const attachment = new AttachmentBuilder(pngPath, { name: 'most-anticipated.png' });
-            await earningsCh.send({
-              content: `**Most Anticipated Earnings · Week of ${fmtAiosDate(weekStart)}**`,
-              files: [attachment],
-            });
-            console.log(`✓ posted branded most-anticipated graphic → #${earningsCh.name}`);
-          }
-        } catch (ge) {
-          console.error(`⚠ branded graphic failed (text embed already posted): ${ge.message}`);
-        }
-      } else if (dow !== 'Sat' && dow !== 'Sun' && !isAlreadyPostedToday('earnings-daily')) {
+      // NOTE: The Sunday weekly text-embed + MST-branded "Most Anticipated"
+      // graphic were retired 2026-05-17. The new Sunday format is the
+      // Earnings Whispers screenshot + chronological expected-moves text,
+      // posted via scripts/repost-correct-order.js until weekly automation
+      // is wired. Mon–Fri next-day previews below remain unchanged.
+      if (dow === 'Sun') {
+        console.log('→ Sunday: weekly post is handled by repost-correct-order.js, not this cron.');
+      } else if (dow !== 'Sat' && !isAlreadyPostedToday('earnings-daily')) {
         const rows = await fetchEarnings(tomorrow, tomorrow);
         console.log(`→ enriching ${rows.length} daily earnings rows — market cap + last-4Q reaction…`);
         const enriched = await enrichAndScore(rows, { finnhubKey: FINNHUB_API_KEY });
